@@ -16,21 +16,20 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
 
     // Debug logging
     useEffect(() => {
-        console.log('[AuthGuard] State:', { isAuthenticated, isLoading });
+        logger.debug('AuthGuard state changed', { isAuthenticated, isLoading });
     }, [isAuthenticated, isLoading]);
 
     // useEffect(() => {
     //     // Redirect to login if not authenticated after loading completes
     //     if (!isAuthenticated) {
     //         logger.info('Unauthorized access attempt, redirecting to login');
-    //         console.log('[AuthGuard] Redirecting to /login');
     //         router.push('/login');
     //     }
     // }, [isAuthenticated, isLoading, router]);
 
     // Show loading state while checking authentication
     if (isLoading && !isAuthenticated) {
-        console.log('[AuthGuard] Showing loading spinner');
+        logger.debug('AuthGuard showing loading spinner');
         return (
             fallback || (
                 <div className="flex min-h-screen items-center justify-center">
@@ -45,10 +44,10 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
 
     // Don't render children until authenticated
     if (!isAuthenticated) {
-        console.log('[AuthGuard] Not authenticated, returning null');
+        logger.debug('AuthGuard: User not authenticated');
         return null;
     }
 
-    console.log('[AuthGuard] Authenticated, rendering children');
+    logger.debug('AuthGuard: User authenticated, rendering children');
     return <>{children}</>;
 }

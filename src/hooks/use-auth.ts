@@ -55,10 +55,13 @@ export function useAuth() {
     };
 
     useEffect(() => {
-        console.log('[useAuth] Setting up auth listener');
+        logger.debug('useAuth: Setting up auth listener');
         setLoading(true);
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            console.log('[useAuth] Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
+            logger.debug('useAuth: Auth state changed', {
+                hasUser: !!firebaseUser,
+                uid: firebaseUser?.uid
+            });
             if (firebaseUser) {
                 // Get Firebase ID token and set cookie
                 const idToken = await firebaseUser.getIdToken();
@@ -72,7 +75,7 @@ export function useAuth() {
                 setUser(null);
             }
             setLoading(false);
-            console.log('[useAuth] Loading complete');
+            logger.debug('useAuth: Loading complete');
         });
 
         return () => unsubscribe();

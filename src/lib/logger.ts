@@ -1,10 +1,11 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogData = Record<string, unknown> | string | number | boolean | null | undefined;
 
 interface LogEntry {
     timestamp: string;
     level: LogLevel;
     message: string;
-    data?: any;
+    data?: LogData;
 }
 
 class Logger {
@@ -23,7 +24,7 @@ class Logger {
         return this.levels[level] >= this.levels[this.logLevel];
     }
 
-    private formatLog(level: LogLevel, message: string, data?: any): LogEntry {
+    private formatLog(level: LogLevel, message: string, data?: LogData): LogEntry {
         return {
             timestamp: new Date().toISOString(),
             level,
@@ -32,7 +33,7 @@ class Logger {
         };
     }
 
-    private log(level: LogLevel, message: string, data?: any): void {
+    private log(level: LogLevel, message: string, data?: LogData): void {
         if (!this.shouldLog(level)) return;
 
         const logEntry = this.formatLog(level, message, data);
@@ -54,20 +55,59 @@ class Logger {
         }
     }
 
-    debug(message: string, data?: any): void {
+    debug(message: string, data?: LogData): void {
         this.log('debug', message, data);
     }
 
-    info(message: string, data?: any): void {
+    info(message: string, data?: LogData): void {
         this.log('info', message, data);
     }
 
-    warn(message: string, data?: any): void {
+    warn(message: string, data?: LogData): void {
         this.log('warn', message, data);
     }
 
-    error(message: string, data?: any): void {
+    error(message: string, data?: LogData): void {
         this.log('error', message, data);
+    }
+
+    /**
+     * Create a logger with context (useful for adding consistent metadata)
+     */
+    createChild(context: Record<string, unknown>): Logger {
+        const childLogger = new Logger();
+        const originalLog = childLogger.log.bind(childLogger);
+
+        childLogger.log = (level: LogLevel, message: string, data?: LogData) => {
+            const contextData = typeof data === 'object' && data !== null
+                ? { ...context, ...data as Record<string, unknown> }
+                : { ...context, data };
+            originalLog(level, message, contextData);
+        };
+
+        return childLogger;
+    }
+
+    /**
+     * Log performance metrics
+     */
+    performance(operation: string, duration: number, data?: LogData): void {
+        const perfData = typeof data === 'object' && data !== null
+            ? { duration: `${duration}ms`, operation, ...data as Record<string, unknown> }
+            : { duration: `${duration}ms`, operation, additionalData: data };
+
+        this.info(`Performance: ${operation}`, perfData);
+    }
+
+    /**
+     * Log API requests/responses
+     */
+    apiCall(method: string, url: string, status?: number, duration?: number, data?: LogData): void {
+        const apiData = typeof data === 'object' && data !== null
+            ? { method, url, status, duration: duration ? `${duration}ms` : undefined, ...data as Record<string, unknown> }
+            : { method, url, status, duration: duration ? `${duration}ms` : undefined, additionalData: data };
+
+        this.info(`API: ${method} ${url}`, apiData);
     }
 }
 
