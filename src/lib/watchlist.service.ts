@@ -36,6 +36,7 @@ export const addToWatchlist = async (
         const watchlistItem: WatchlistItem = {
             id: docRef.id,
             ...newItem,
+            companyName: ''
         };
 
         logger.info('Added to watchlist', { symbol, userId });

@@ -1,6 +1,5 @@
 import TradingViewWidget from "@/components/TradingViewWidget";
 import WatchlistButtonRTDB from "@/components/WatchlistButtonRTDB";
-import FirebaseRTDBTest from "@/components/FirebaseRTDBTest";
 import {
     SYMBOL_INFO_WIDGET_CONFIG,
     CANDLE_CHART_WIDGET_CONFIG,
@@ -14,10 +13,6 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
     return (
         <div className="flex flex-col min-h-screen p-4 md:p-6 lg:p-8">
-            {/* Temporary Firebase RTDB Test Component */}
-            <div className="mb-4">
-                <FirebaseRTDBTest />
-            </div>
 
             <div className="mb-8 w-full items-start flex flex-row">
 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import WatchlistButton from '@/components/WatchlistButton';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
-import { TrendingUp, TrendingDown, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 const WatchlistSection = () => {
     const { isAuthenticated } = useAuth();
@@ -71,21 +71,16 @@ const WatchlistSection = () => {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {displayedWatchlist.map((item) => {
-                        const isPositive = (item.changePercent || 0) >= 0;
-                        const changeColor = isPositive ? 'text-emerald-400' : 'text-red-400';
-                        const TrendIcon = isPositive ? TrendingUp : TrendingDown;
-
                         return (
-                            <Card key={item.id} className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-colors">
+                            <Card key={item.id || item.symbol} className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-colors">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium text-gray-300">
                                         {item.symbol}
                                     </CardTitle>
                                     <div className="flex items-center space-x-2">
-                                        <TrendIcon className={`h-4 w-4 ${changeColor}`} />
                                         <WatchlistButton
                                             symbol={item.symbol}
-                                            company={item.name}
+                                            company={item.companyName}
                                             isInWatchlist={true}
                                             type="icon"
                                         />
@@ -94,17 +89,14 @@ const WatchlistSection = () => {
                                 <CardContent>
                                     <Link href={`/stocks/${item.symbol.toLowerCase()}`}>
                                         <div className="cursor-pointer">
-                                            <div className="text-2xl font-bold text-white mb-1">
-                                                {item.price ? `$${item.price.toFixed(2)}` : 'N/A'}
+                                            <div className="text-lg font-semibold text-white mb-2">
+                                                {item.companyName}
                                             </div>
-                                            <p className={`text-xs ${changeColor}`}>
-                                                {item.changePercent !== undefined
-                                                    ? `${isPositive ? '+' : ''}${item.changePercent.toFixed(2)}%`
-                                                    : 'No data'
+                                            <p className="text-xs text-gray-400">
+                                                Added {typeof item.addedAt === 'string'
+                                                    ? new Date(item.addedAt).toLocaleDateString()
+                                                    : item.addedAt?.toDate?.()?.toLocaleDateString() || 'Recently'
                                                 }
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-1 truncate">
-                                                {item.name}
                                             </p>
                                         </div>
                                     </Link>

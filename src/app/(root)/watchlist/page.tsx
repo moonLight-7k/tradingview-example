@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import WatchlistButton from '@/components/WatchlistButton';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
-import { TrendingUp, TrendingDown, ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 
 export default function WatchlistPage() {
     const { isAuthenticated } = useAuth();
@@ -163,13 +163,9 @@ export default function WatchlistPage() {
 
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {watchlist.map((item) => {
-                            const isPositive = (item.changePercent || 0) >= 0;
-                            const changeColor = isPositive ? 'text-emerald-400' : 'text-red-400';
-                            const TrendIcon = isPositive ? TrendingUp : TrendingDown;
-
                             return (
                                 <Card
-                                    key={item.id}
+                                    key={item.id || item.symbol}
                                     className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-colors"
                                 >
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -177,10 +173,9 @@ export default function WatchlistPage() {
                                             {item.symbol}
                                         </CardTitle>
                                         <div className="flex items-center space-x-2">
-                                            <TrendIcon className={`h-4 w-4 ${changeColor}`} />
                                             <WatchlistButton
                                                 symbol={item.symbol}
-                                                company={item.name}
+                                                company={item.companyName}
                                                 isInWatchlist={true}
                                                 type="icon"
                                                 showTrashIcon={true}
@@ -190,25 +185,17 @@ export default function WatchlistPage() {
                                     <CardContent>
                                         <Link href={`/stocks/${item.symbol.toLowerCase()}`}>
                                             <div className="cursor-pointer">
-                                                <div className="text-2xl font-bold text-white mb-1">
-                                                    {item.price ? `$${item.price.toFixed(2)}` : 'N/A'}
+                                                <div className="text-xl font-bold text-white mb-2">
+                                                    {item.companyName}
                                                 </div>
-                                                <p className={`text-xs ${changeColor} mb-2`}>
-                                                    {item.changePercent !== undefined
-                                                        ? `${isPositive ? '+' : ''}${item.changePercent.toFixed(2)}%`
-                                                        : 'No data'
-                                                    }
-                                                    {item.change !== undefined && (
-                                                        <span className="ml-1">
-                                                            ({isPositive ? '+' : ''}${item.change.toFixed(2)})
-                                                        </span>
-                                                    )}
-                                                </p>
-                                                <p className="text-xs text-gray-400 mb-1">
-                                                    {item.name}
+                                                <p className="text-sm text-gray-400 mb-1">
+                                                    Symbol: {item.symbol}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    Added {new Date(item.addedAt).toLocaleDateString()}
+                                                    Added {typeof item.addedAt === 'string'
+                                                        ? new Date(item.addedAt).toLocaleDateString()
+                                                        : item.addedAt?.toDate?.()?.toLocaleDateString() || 'Recently'
+                                                    }
                                                 </p>
                                             </div>
                                         </Link>

@@ -1,14 +1,12 @@
-// Watchlist types
+// Watchlist types - Updated to match PROJECT.md schema
 export interface WatchlistItem {
-    id: string; // Firestore document ID
+    id?: string; // Firestore document ID (optional for new items)
     userId: string;
     symbol: string;
-    name: string;
-    price?: number;
-    change?: number;
-    changePercent?: number;
-    addedAt: string; // ISO date string
-    updatedAt: string; // ISO date string
+    companyName: string; // Changed from 'name' to 'companyName' per PROJECT.md
+    addedAt: import('firebase/firestore').Timestamp | string; // Firebase Timestamp or ISO string
+    // Removed price fields as they're not in the base schema
+    // Price data will be fetched separately when displaying
 }
 
 // Realtime Database Watchlist types
@@ -30,7 +28,7 @@ export interface WatchlistHookReturn {
     watchlist: WatchlistItem[];
     isLoading: boolean;
     error: string | null;
-    addToWatchlist: (symbol: string, name: string) => Promise<void>;
+    addToWatchlist: (symbol: string, companyName: string) => Promise<void>;
     removeFromWatchlist: (symbol: string) => Promise<void>;
     isInWatchlist: (symbol: string) => boolean;
     refreshWatchlist: () => Promise<void>;

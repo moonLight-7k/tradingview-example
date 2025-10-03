@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './use-auth';
 import {
-    setDocument,
-    deleteDocument,
-    updateDocument,
+    addDocument,
+    deleteDocumentsByQuery,
     subscribeToQuery,
-    documentExists
+    queryDocuments
 } from '@/db/firestoreDB.utils';
 import { Timestamp } from 'firebase/firestore';
 import type { WatchlistItem, WatchlistHookReturn } from '@/types';
@@ -22,9 +21,9 @@ export function useWatchlist(): WatchlistHookReturn {
     // Add stock to watchlist
     const addToWatchlist = useCallback(async (
         symbol: string,
-        name: string
+        companyName: string
     ) => {
-        console.log('🚀 addToWatchlist called', { symbol, name, isAuthenticated, userId: user?.uid });
+        console.log('🚀 addToWatchlist called', { symbol, companyName, isAuthenticated, userId: user?.uid });
 
         if (!isAuthenticated || !user?.uid) {
             const errorMsg = 'User must be authenticated to add to watchlist';
@@ -38,17 +37,31 @@ export function useWatchlist(): WatchlistHookReturn {
         try {
             const symbolUpper = symbol.toUpperCase();
 
+            // Check if stock already exists in watchlist
+            const existingItemsResult = await queryDocuments<WatchlistItem>('watchlists', {
+                whereConditions: [
+                    { field: 'userId', operator: '==', value: user.uid },
+                    { field: 'symbol', operator: '==', value: symbolUpper }
+                ]
+            });
+
+            if (existingItemsResult.data.length > 0) {
+                console.log('📋 Stock already in watchlist');
+                logger.info('Stock already in watchlist', { symbol: symbolUpper, userId: user.uid });
+                return;
+            }
+
+            // Create new watchlist item with proper schema
             const watchlistData = {
                 userId: user.uid,
                 symbol: symbolUpper,
-                name,
-                addedAt: Timestamp.now().toDate().toISOString(),
-                updatedAt: Timestamp.now().toDate().toISOString(),
+                companyName: companyName,
+                addedAt: Timestamp.now(),
             };
 
             console.log('📦 Watchlist data to save:', watchlistData);
 
-            await setDocument('watchlist', `${user.uid}_${symbolUpper}`, watchlistData);
+            await addDocument('watchlists', watchlistData);
             console.log('✅ Successfully added to watchlist (Firestore)');
             logger.info('Added to watchlist (Firestore)', { symbol: symbolUpper, userId: user.uid });
         } catch (err) {
@@ -58,6 +71,7 @@ export function useWatchlist(): WatchlistHookReturn {
             logger.error('Failed to add to watchlist (Firestore)', {
                 error: err,
                 symbol,
+                companyName,
                 userId: user.uid
             });
             throw err;
@@ -77,9 +91,15 @@ export function useWatchlist(): WatchlistHookReturn {
 
         try {
             const symbolUpper = symbol.toUpperCase();
-            const docId = `${user.uid}_${symbolUpper}`;
 
-            await deleteDocument('watchlist', docId);
+            // Delete documents that match userId and symbol
+            await deleteDocumentsByQuery('watchlists', {
+                whereConditions: [
+                    { field: 'userId', operator: '==', value: user.uid },
+                    { field: 'symbol', operator: '==', value: symbolUpper }
+                ]
+            });
+
             logger.info('Removed from watchlist (Firestore)', { symbol: symbolUpper, userId: user.uid });
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to remove from watchlist';
@@ -101,7 +121,7 @@ export function useWatchlist(): WatchlistHookReturn {
         return watchlist.some(item => item.symbol === symbolUpper);
     }, [watchlist]);
 
-    // Update prices for multiple stocks
+    // Update prices for multiple stocks - simplified for new schema
     const updatePrices = useCallback(async (
         priceUpdates: { symbol: string; price: number; change?: number; changePercent?: number }[]
     ) => {
@@ -109,49 +129,15 @@ export function useWatchlist(): WatchlistHookReturn {
             throw new Error('User must be authenticated to update prices');
         }
 
-        try {
-            const updatePromises = priceUpdates.map(async ({ symbol, price, change, changePercent }) => {
-                const symbolUpper = symbol.toUpperCase();
-                const docId = `${user.uid}_${symbolUpper}`;
+        // Note: With the new simplified schema, price updates would need to be handled differently
+        // For now, we'll just log the request since the basic schema doesn't include price fields
+        logger.info('Price update requested for watchlist items', {
+            symbols: priceUpdates.map(u => u.symbol),
+            userId: user.uid
+        });
 
-                // Check if stock exists in watchlist first
-                const exists = await documentExists('watchlist', docId);
-                if (!exists) {
-                    logger.warn('Attempted to update price for stock not in watchlist', {
-                        symbol: symbolUpper,
-                        userId: user.uid
-                    });
-                    return;
-                }
-
-                const updatePayload: Partial<WatchlistItem> = {
-                    price,
-                    updatedAt: Timestamp.now().toDate().toISOString(),
-                };
-
-                if (change !== undefined) {
-                    updatePayload.change = change;
-                }
-                if (changePercent !== undefined) {
-                    updatePayload.changePercent = changePercent;
-                }
-
-                await updateDocument('watchlist', docId, updatePayload);
-                logger.info('Updated stock price in watchlist (Firestore)', {
-                    symbol: symbolUpper,
-                    price,
-                    userId: user.uid
-                });
-            });
-
-            await Promise.all(updatePromises);
-        } catch (err) {
-            logger.error('Failed to update prices (Firestore)', {
-                error: err,
-                userId: user.uid
-            });
-            throw err;
-        }
+        // The watchlist will get real-time price data from the TradingView widgets
+        // or through separate API calls when displaying the data
     }, [isAuthenticated, user?.uid]);
 
     // Refresh watchlist manually
@@ -176,7 +162,7 @@ export function useWatchlist(): WatchlistHookReturn {
         setError(null);
 
         const unsubscribe = subscribeToQuery<WatchlistItem>(
-            'watchlist',
+            'watchlists',
             {
                 whereConditions: [
                     { field: 'userId', operator: '==', value: user.uid }
